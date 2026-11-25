@@ -1,0 +1,67 @@
+{
+  "name": "localhostsearch",
+  "version": "1.0.1",
+  "description": "基于 NTFS MFT 的本地文件极速搜索客户端，支持拼音首字母搜索",
+  "main": "main.js",
+  "author": "onlyThat",
+  "license": "MIT",
+  "scripts": {
+    "start": "node run-electron.js",
+    "test": "node tests/test-search.js && runtime\\python\\python.exe scanner\\scanner.py --selftest",
+    "dist": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.onlythat.localsearch",
+    "productName": "localhostSearch",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "run-electron.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "scanner",
+        "to": "scanner",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!vendor/**",
+          "!build_pinyin_table.py"
+        ]
+      },
+      {
+        "from": "runtime/python",
+        "to": "runtime/python",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "localhostSearch-Portable-${version}.exe"
+    },
+    "afterPack": "build/after-pack.js",
+    "compression": "maximum",
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "33.4.11",
+    "electron-builder": "^26.18.0"
+  }
+}

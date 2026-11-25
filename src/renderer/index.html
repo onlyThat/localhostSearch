@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>localhostSearch · 本地文件极速搜索</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 自定义标题栏 -->
+    <header class="titlebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m8 10.5 2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="brand-name">localhostSearch</span>
+        <span class="brand-sub">本地文件极速搜索</span>
+      </div>
+      <div class="titlebar-right">
+        <span class="engine-badge" id="engineBadge"><span class="dot"></span>准备中</span>
+        <button class="win-btn" id="btnMin" title="最小化" aria-label="最小化"><span></span></button>
+        <button class="win-btn" id="btnMax" title="最大化" aria-label="最大化"><span class="max-icon"></span></button>
+        <button class="win-btn close" id="btnClose" title="关闭" aria-label="关闭"><span></span></button>
+      </div>
+    </header>
+
+    <!-- 权限提示 -->
+    <div class="notice hidden" id="adminNotice">
+      <span class="notice-icon">!</span>
+      <span>当前未提权，<b>NTFS MFT 直读</b>不可用，索引使用目录遍历模式。</span>
+      <button class="notice-action" id="btnElevate">以管理员身份重启</button>
+      <button class="notice-close" id="btnDismissNotice" aria-label="关闭提示">×</button>
+    </div>
+
+    <!-- 搜索区 -->
+    <section class="search-zone">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="searchInput" type="text" autocomplete="off" spellcheck="false"
+               placeholder="搜索文件名或路径，试试输入 wx 查找「微信」…" aria-label="搜索" />
+        <span class="kbd-hint" id="kbdHint">Ctrl + F</span>
+        <button class="clear-btn hidden" id="btnClear" aria-label="清空搜索">×</button>
+      </div>
+      <div class="filters" role="tablist" aria-label="结果类型">
+        <button class="chip active" data-type="all" role="tab">全部</button>
+        <button class="chip" data-type="file" role="tab">文件</button>
+        <button class="chip" data-type="dir" role="tab">文件夹</button>
+        <span class="filter-spacer"></span>
+        <button class="text-btn" id="btnSettings" title="索引设置">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.9a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.98 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.62 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.98a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.62h.03A1.7 1.7 0 0 0 10.06 3.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.1 4.7a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.38 9v.03A1.7 1.7 0 0 0 20.9 10.1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03Z" stroke="currentColor" stroke-width="1.5"/></svg>
+          索引设置
+        </button>
+        <button class="primary-btn" id="btnRebuild">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 6.2M20 5v6h-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          重建索引
+        </button>
+      </div>
+    </section>
+
+    <!-- 结果区 -->
+    <div class="result-head">
+      <div class="result-count" id="resultCount">输入关键词开始搜索</div>
+      <div class="index-info" id="indexInfo">尚未建立索引</div>
+    </div>
+    <div class="progress-track hidden" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
+    <main class="results" id="results">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-illustration">
+          <svg viewBox="0 0 120 90" fill="none"><rect x="16" y="14" width="88" height="62" rx="10" fill="#eaf0ff"/><rect x="26" y="26" width="42" height="7" rx="3.5" fill="#c3d3ff"/><rect x="26" y="40" width="62" height="5" rx="2.5" fill="#d8e2ff"/><rect x="26" y="52" width="50" height="5" rx="2.5" fill="#d8e2ff"/><circle cx="84" cy="62" r="15" fill="white" stroke="#9db8ff" stroke-width="3"/><path d="m95 73 9 9" stroke="#9db8ff" stroke-width="4" stroke-linecap="round"/></svg>
+        </div>
+        <h2 id="emptyTitle">输入关键词，秒级找到文件</h2>
+        <p id="emptyDesc">支持名称、路径、拼音首字母（wx）与全拼（weixin）搜索</p>
+        <div class="example-chips">
+          <button class="example" data-q="wx">wx → 微信</button>
+          <button class="example" data-q="scanner">scanner</button>
+          <button class="example" data-q="xlsx">.xlsx</button>
+        </div>
+      </div>
+      <div id="resultList" class="result-list"></div>
+    </main>
+
+    <footer class="statusbar">
+      <div class="status-left">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">就绪</span>
+      </div>
+      <div class="shortcuts">
+        <span><kbd>↑</kbd><kbd>↓</kbd> 选择</span>
+        <span><kbd>Enter</kbd> 打开</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 所在文件夹</span>
+        <span><kbd>Ctrl</kbd>+<kbd>C</kbd> 复制路径</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-head">
+        <h2 id="settingsTitle">索引设置</h2>
+        <button class="modal-close" id="btnCloseSettings" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">索引模式</label>
+        <select id="settingMode" class="field">
+          <option value="auto">自动（优先 MFT，失败自动降级）</option>
+          <option value="mft">仅 NTFS MFT 直读（需管理员）</option>
+          <option value="walk">仅目录遍历（无需管理员）</option>
+        </select>
+        <p class="field-hint">MFT 直读直接解析主文件表，比遍历目录树快得多，但需要以管理员身份运行。</p>
+
+        <label class="field-label">NTFS 盘符（留空自动检测全部盘；目录遍历模式下也可只选指定盘，例如：C: D:）</label>
+        <input id="settingDrives" class="field" type="text" placeholder="C: D:" />
+
+        <label class="field-label">目录遍历根目录（每行一个，留空为系统盘常用目录 + 其他磁盘全部目录，自动跳过缓存和依赖目录）</label>
+        <textarea id="settingRoots" class="field" rows="4" placeholder="C:\Users\me\Documents&#10;D:\Projects"></textarea>
+
+        <label class="field-label">Python 路径（可选，自动检测失败时填写）</label>
+        <input id="settingPython" class="field" type="text" placeholder="C:\Python313\python.exe" />
+      </div>
+      <div class="modal-foot">
+        <button class="ghost-btn" id="btnCancelSettings">取消</button>
+        <button class="primary-btn" id="btnSaveSettings">保存并重建索引</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

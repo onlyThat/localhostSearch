@@ -1,0 +1,14 @@
+# 统一换行，避免 Windows 检出时反复产生 diff 噪声
+* text=auto eol=lf
+
+# 二进制资源：禁止换行转换与文本 diff
+*.exe    binary
+*.dll    binary
+*.pyd    binary
+*.zip    binary
+*.bin    binary
+*.ico    binary
+*.png    binary
+
+# 批处理必须保持 CRLF，否则 cmd 解析异常
+*.bat    text eol=crlf
